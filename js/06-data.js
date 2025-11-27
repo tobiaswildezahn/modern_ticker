@@ -2,57 +2,82 @@
  * 06-data.js - Datenabfrage und -verarbeitung
  *
  * Enthält alle Funktionen für die Kommunikation mit den ArcGIS Feature Services.
- * Verwendet esriRequest mit IWA (Integrated Windows Authentication).
+ * Verwendet native fetch() mit credentials: 'include' für IWA.
  * Windows-Anmeldedaten werden automatisch vom Browser gesendet.
  */
 
 /**
  * Führt eine ArcGIS Feature Query durch
  *
- * Verwendet esriRequest mit IWA - Windows-Anmeldedaten werden automatisch gesendet.
+ * Verwendet native fetch() mit credentials: 'include' für IWA.
+ * Der Browser sendet automatisch Windows-Anmeldedaten.
  *
  * @param {string} url - Feature Service URL
  * @param {Object} params - Query-Parameter
  * @returns {Promise<Array>} Array von Features
  */
 async function queryFeatureService(url, params = {}) {
-    // Prüfe ob esriRequest verfügbar ist
-    if (!esriRequest) {
-        throw new Error('esriRequest nicht initialisiert. Bitte Auth-Modul laden.');
-    }
-
     const defaultParams = {
         where: '1=1',
         outFields: '*',
-        returnGeometry: true,
+        returnGeometry: 'true',
         f: 'json'
     };
 
     const queryParams = { ...defaultParams, ...params };
 
+    // Falls manueller Token vorhanden (Fallback)
+    const token = typeof getManualToken === 'function' ? getManualToken() : null;
+    if (token) {
+        queryParams.token = token;
+    }
+
+    // Query-String erstellen
+    const queryString = Object.entries(queryParams)
+        .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+        .join('&');
+
+    const requestUrl = `${url}/query?${queryString}`;
+
     try {
-        const response = await esriRequest(url + '/query', {
-            query: queryParams,
-            responseType: 'json'
+        // Native fetch mit credentials: 'include' für IWA
+        const response = await fetch(requestUrl, {
+            method: 'GET',
+            credentials: 'include',  // Sendet Windows-Anmeldedaten automatisch
+            headers: {
+                'Accept': 'application/json'
+            }
         });
 
+        if (!response.ok) {
+            // HTTP-Fehler behandeln
+            if (response.status === 401 || response.status === 403) {
+                console.warn('HTTP ' + response.status + ' - IWA fehlgeschlagen, zeige Token-Dialog');
+                showTokenDialog();
+                throw new Error('Authentifizierung erforderlich (HTTP ' + response.status + ')');
+            }
+            throw new Error('HTTP Error: ' + response.status + ' ' + response.statusText);
+        }
+
+        const data = await response.json();
+
         // Fehlerprüfung für ArcGIS Fehlerantworten
-        if (response.data && response.data.error) {
-            const errorMsg = response.data.error.message || JSON.stringify(response.data.error);
-            const errorCode = response.data.error.code;
+        if (data.error) {
+            const errorMsg = data.error.message || JSON.stringify(data.error);
+            const errorCode = data.error.code;
 
             // Bei Auth-Fehlern: Token-Dialog als Fallback anzeigen
             if (errorMsg.includes('Token') || errorCode === 499 || errorCode === 498) {
-                console.warn('IWA-Authentifizierung fehlgeschlagen, zeige Token-Dialog als Fallback');
+                console.warn('ArcGIS Auth-Fehler, zeige Token-Dialog als Fallback');
                 showTokenDialog();
                 throw new Error('Authentifizierung erforderlich');
             }
 
-            throw new Error(`ArcGIS Error: ${errorMsg}`);
+            throw new Error('ArcGIS Error: ' + errorMsg);
         }
 
-        if (response.data && response.data.features) {
-            return response.data.features.map(f => ({
+        if (data.features) {
+            return data.features.map(f => ({
                 ...f.attributes,
                 geometry: f.geometry
             }));
@@ -61,13 +86,6 @@ async function queryFeatureService(url, params = {}) {
         return [];
     } catch (error) {
         console.error('Feature Service Query Fehler:', error);
-
-        // Bei 401/403: IWA hat nicht funktioniert, Fallback zu Token-Dialog
-        if (error.details && (error.details.httpStatus === 401 || error.details.httpStatus === 403)) {
-            console.warn('HTTP 401/403 - IWA fehlgeschlagen, zeige Token-Dialog');
-            showTokenDialog();
-        }
-
         throw error;
     }
 }

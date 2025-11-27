@@ -2,100 +2,32 @@
  * 04-auth.js - IWA (Integrated Windows Authentication)
  *
  * Konfiguriert die automatische Windows-Authentifizierung für ArcGIS Feature Services.
- * Der Browser übergibt automatisch die Windows-Anmeldedaten an den Server.
+ * Verwendet native fetch() mit credentials: 'include' für IWA.
  *
  * HINWEIS: IWA funktioniert nur im Intranet mit korrekt konfiguriertem ArcGIS Server.
  */
 
-// Globale Referenz für esriRequest
-let esriRequest = null;
-
 /**
  * Initialisiert die IWA-Authentifizierung
  *
- * Konfiguriert esriConfig um Windows-Credentials automatisch zu senden.
+ * Bei IWA ist keine spezielle Initialisierung nötig - der Browser sendet
+ * automatisch Windows-Credentials wenn credentials: 'include' gesetzt ist.
  *
- * @returns {Promise} Resolved wenn Konfiguration abgeschlossen
+ * @returns {Promise} Resolved sofort
  */
 function initAuth() {
-    return new Promise((resolve, reject) => {
-        require([
-            'esri/config',
-            'esri/request'
-        ], function(esriConfig, request) {
-            esriRequest = request;
-
-            // Server als "trusted" markieren - Browser sendet automatisch Windows-Credentials
-            // Dies aktiviert IWA (Integrated Windows Authentication)
-            const serverUrl = CONFIG.arcgisServer;
-
-            if (!esriConfig.request.trustedServers.includes(serverUrl)) {
-                esriConfig.request.trustedServers.push(serverUrl);
-            }
-
-            // Zusätzlich: Erlaubt withCredentials für Cross-Origin Requests
-            // Dies ist wichtig für IWA im Intranet
-            esriConfig.request.httpsDomains = esriConfig.request.httpsDomains || [];
-
-            // Server-Domain extrahieren und hinzufügen
-            try {
-                const url = new URL(serverUrl);
-                if (!esriConfig.request.httpsDomains.includes(url.hostname)) {
-                    esriConfig.request.httpsDomains.push(url.hostname);
-                }
-            } catch (e) {
-                console.warn('URL-Parsing fehlgeschlagen:', e);
-            }
-
-            console.log('✅ IWA-Authentifizierung konfiguriert');
-            console.log('   Trusted Server:', serverUrl);
-
-            resolve();
-        });
+    return new Promise((resolve) => {
+        console.log('✅ IWA-Authentifizierung konfiguriert');
+        console.log('   Server:', CONFIG.arcgisServer);
+        console.log('   Methode: Native fetch() mit credentials: include');
+        resolve();
     });
 }
 
 /**
- * Prüft ob die Authentifizierung funktioniert
- *
- * Führt eine Test-Anfrage durch um zu prüfen ob IWA korrekt konfiguriert ist.
- *
- * @returns {Promise<boolean>} True wenn Authentifizierung erfolgreich
- */
-async function testAuthentication() {
-    if (!esriRequest) {
-        console.error('esriRequest nicht initialisiert');
-        return false;
-    }
-
-    try {
-        // Einfache Metadaten-Abfrage zum Testen
-        const testUrl = CONFIG.api.events;
-        const response = await esriRequest(testUrl, {
-            query: { f: 'json' },
-            responseType: 'json'
-        });
-
-        if (response.data && !response.data.error) {
-            console.log('✅ IWA-Authentifizierung erfolgreich');
-            return true;
-        }
-
-        console.warn('⚠️ Server-Antwort enthält Fehler:', response.data?.error);
-        return false;
-    } catch (error) {
-        console.error('❌ IWA-Authentifizierung fehlgeschlagen:', error);
-        return false;
-    }
-}
-
-/**
  * Initialisiert Token-Dialog Event-Listener (Fallback, falls IWA nicht funktioniert)
- *
- * Diese Funktion bleibt für Kompatibilität, wird aber bei IWA nicht benötigt.
  */
 function initTokenDialogListeners() {
-    // Bei IWA nicht benötigt, aber für Kompatibilität beibehalten
     const submitBtn = document.getElementById('token-submit');
     if (submitBtn) {
         submitBtn.addEventListener('click', submitToken);
@@ -143,6 +75,9 @@ function hideTokenDialog() {
     }
 }
 
+// Globale Variable für manuell eingegebenen Token (Fallback)
+let manualToken = null;
+
 /**
  * Verarbeitet die Token-Eingabe (Fallback)
  */
@@ -156,27 +91,28 @@ function submitToken() {
         return;
     }
 
-    // Token manuell registrieren (Fallback wenn IWA nicht funktioniert)
-    require(['esri/identity/IdentityManager'], function(esriId) {
-        esriId.registerToken({
-            server: CONFIG.arcgisServer,
-            token: token,
-            expires: Date.now() + CONFIG.auth.tokenExpiry
-        });
+    // Token speichern für manuelle Verwendung
+    manualToken = token;
 
-        hideTokenDialog();
-        showToast('Token registriert, lade Daten...', 'info');
-        refreshDashboard();
-    });
+    hideTokenDialog();
+    showToast('Token gespeichert, lade Daten...', 'info');
+    refreshDashboard();
 }
 
 /**
- * Prüft ob Token benötigt wird (bei IWA immer false)
+ * Gibt den manuellen Token zurück (falls vorhanden)
+ *
+ * @returns {string|null} Token oder null
+ */
+function getManualToken() {
+    return manualToken;
+}
+
+/**
+ * Prüft ob Token benötigt wird (bei IWA immer true)
  *
  * @returns {boolean} Bei IWA immer true (kein manueller Token nötig)
  */
 function hasValidToken() {
-    // Bei IWA ist kein manueller Token erforderlich
-    // Windows-Credentials werden automatisch gesendet
     return true;
 }
