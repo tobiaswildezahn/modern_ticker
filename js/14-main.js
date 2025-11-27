@@ -4,8 +4,9 @@
  * Orchestriert die Initialisierung und das Zusammenspiel aller Module.
  * Enthält die init()-Funktion, die beim Laden der Seite ausgeführt wird.
  *
- * WICHTIG: Die Authentifizierung (initAuth) muss zuerst erfolgen, bevor
- * Daten von den ArcGIS Feature Services geladen werden können.
+ * AUTHENTIFIZIERUNG: Verwendet IWA (Integrated Windows Authentication).
+ * Windows-Anmeldedaten werden automatisch vom Browser an den Server gesendet.
+ * Kein manueller Token erforderlich.
  */
 
 /**
@@ -90,13 +91,12 @@ async function init() {
     try {
         showLoading();
 
-        // 1. AUTHENTIFIZIERUNG ZUERST - esriRequest und IdentityManager laden
+        // 1. IWA-AUTHENTIFIZIERUNG - esriConfig.trustedServers konfigurieren
         await initAuth();
-        console.log('✅ ArcGIS Authentifizierung initialisiert');
+        console.log('✅ IWA-Authentifizierung konfiguriert');
 
-        // 2. Token-Dialog Event-Listener
+        // 2. Token-Dialog Event-Listener (Fallback falls IWA nicht funktioniert)
         initTokenDialogListeners();
-        console.log('✅ Token-Dialog initialisiert');
 
         // 3. Karte initialisieren (benötigt ArcGIS AMD-Loader)
         try {
@@ -118,29 +118,21 @@ async function init() {
         initMapControls();
         console.log('✅ Event-Listener initialisiert');
 
-        // 6. Prüfen ob Token vorhanden, sonst Dialog zeigen
-        if (!hasValidToken()) {
-            console.log('⚠️ Kein Token vorhanden, zeige Dialog...');
-            showTokenDialog();
-            hideLoading();
-            return; // Warten bis Token eingegeben wird
-        }
-
-        // 7. Initiale Daten laden
+        // 6. Initiale Daten laden (IWA sendet Windows-Credentials automatisch)
         await fetchAllData({
             hours: state.filters.timeRange
         });
         console.log('✅ Initiale Daten geladen');
 
-        // 8. UI aktualisieren
+        // 7. UI aktualisieren
         updateTypeFilterOptions();
         updateUI();
 
-        // 9. Auto-Refresh starten
+        // 8. Auto-Refresh starten
         startAutoRefresh();
         console.log('✅ Auto-Refresh gestartet');
 
-        // 10. Cache-Cleanup planen
+        // 9. Cache-Cleanup planen
         setInterval(cleanCache, 60000); // Jede Minute
 
         console.log('🚒 Dashboard bereit!');

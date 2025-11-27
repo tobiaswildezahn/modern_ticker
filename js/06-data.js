@@ -2,13 +2,14 @@
  * 06-data.js - Datenabfrage und -verarbeitung
  *
  * Enthält alle Funktionen für die Kommunikation mit den ArcGIS Feature Services.
- * Verwendet esriRequest mit IdentityManager für automatisches Token-Management.
+ * Verwendet esriRequest mit IWA (Integrated Windows Authentication).
+ * Windows-Anmeldedaten werden automatisch vom Browser gesendet.
  */
 
 /**
  * Führt eine ArcGIS Feature Query durch
  *
- * Verwendet esriRequest, das automatisch den Token vom IdentityManager verwendet.
+ * Verwendet esriRequest mit IWA - Windows-Anmeldedaten werden automatisch gesendet.
  *
  * @param {string} url - Feature Service URL
  * @param {Object} params - Query-Parameter
@@ -38,11 +39,13 @@ async function queryFeatureService(url, params = {}) {
         // Fehlerprüfung für ArcGIS Fehlerantworten
         if (response.data && response.data.error) {
             const errorMsg = response.data.error.message || JSON.stringify(response.data.error);
+            const errorCode = response.data.error.code;
 
-            // Spezielle Behandlung für Token-Fehler
-            if (errorMsg.includes('Token') || response.data.error.code === 499) {
+            // Bei Auth-Fehlern: Token-Dialog als Fallback anzeigen
+            if (errorMsg.includes('Token') || errorCode === 499 || errorCode === 498) {
+                console.warn('IWA-Authentifizierung fehlgeschlagen, zeige Token-Dialog als Fallback');
                 showTokenDialog();
-                throw new Error('Token erforderlich oder abgelaufen');
+                throw new Error('Authentifizierung erforderlich');
             }
 
             throw new Error(`ArcGIS Error: ${errorMsg}`);
@@ -59,8 +62,9 @@ async function queryFeatureService(url, params = {}) {
     } catch (error) {
         console.error('Feature Service Query Fehler:', error);
 
-        // Bei 401/403 Token-Dialog zeigen
+        // Bei 401/403: IWA hat nicht funktioniert, Fallback zu Token-Dialog
         if (error.details && (error.details.httpStatus === 401 || error.details.httpStatus === 403)) {
+            console.warn('HTTP 401/403 - IWA fehlgeschlagen, zeige Token-Dialog');
             showTokenDialog();
         }
 
