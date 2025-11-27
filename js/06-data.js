@@ -1,57 +1,55 @@
 /**
- * 05-data.js - Datenabfrage und -verarbeitung
+ * 06-data.js - Datenabfrage und -verarbeitung
  *
  * Enthält alle Funktionen für die Kommunikation mit den ArcGIS Feature Services.
- * Verwendet native fetch() für maximale Kompatibilität.
+ * Verwendet esriRequest mit IdentityManager für automatisches Token-Management.
  */
 
 /**
  * Führt eine ArcGIS Feature Query durch
  *
- * Verwendet native fetch() anstelle von esriRequest für bessere Kompatibilität.
+ * Verwendet esriRequest, das automatisch den Token vom IdentityManager verwendet.
  *
  * @param {string} url - Feature Service URL
  * @param {Object} params - Query-Parameter
  * @returns {Promise<Array>} Array von Features
  */
 async function queryFeatureService(url, params = {}) {
+    // Prüfe ob esriRequest verfügbar ist
+    if (!esriRequest) {
+        throw new Error('esriRequest nicht initialisiert. Bitte Auth-Modul laden.');
+    }
+
     const defaultParams = {
         where: '1=1',
         outFields: '*',
-        returnGeometry: 'true',
+        returnGeometry: true,
         f: 'json'
     };
 
     const queryParams = { ...defaultParams, ...params };
 
-    // URL mit Query-Parametern aufbauen
-    const queryString = Object.entries(queryParams)
-        .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
-        .join('&');
-
-    const fullUrl = `${url}/query?${queryString}`;
-
     try {
-        const response = await fetch(fullUrl, {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json'
-            }
+        const response = await esriRequest(url + '/query', {
+            query: queryParams,
+            responseType: 'json'
         });
 
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-
         // Fehlerprüfung für ArcGIS Fehlerantworten
-        if (data.error) {
-            throw new Error(`ArcGIS Error: ${data.error.message || JSON.stringify(data.error)}`);
+        if (response.data && response.data.error) {
+            const errorMsg = response.data.error.message || JSON.stringify(response.data.error);
+
+            // Spezielle Behandlung für Token-Fehler
+            if (errorMsg.includes('Token') || response.data.error.code === 499) {
+                showTokenDialog();
+                throw new Error('Token erforderlich oder abgelaufen');
+            }
+
+            throw new Error(`ArcGIS Error: ${errorMsg}`);
         }
 
-        if (data.features) {
-            return data.features.map(f => ({
+        if (response.data && response.data.features) {
+            return response.data.features.map(f => ({
                 ...f.attributes,
                 geometry: f.geometry
             }));
@@ -60,6 +58,12 @@ async function queryFeatureService(url, params = {}) {
         return [];
     } catch (error) {
         console.error('Feature Service Query Fehler:', error);
+
+        // Bei 401/403 Token-Dialog zeigen
+        if (error.details && (error.details.httpStatus === 401 || error.details.httpStatus === 403)) {
+            showTokenDialog();
+        }
+
         throw error;
     }
 }
@@ -187,7 +191,14 @@ async function fetchAllData(options = {}) {
         };
     } catch (error) {
         setConnectionStatus('disconnected');
-        showToast('Fehler beim Laden der Daten', 'error');
+
+        // Bei Token-Fehler Dialog zeigen
+        if (error.message && error.message.includes('Token')) {
+            showTokenDialog();
+        } else {
+            showToast('Fehler beim Laden der Daten', 'error');
+        }
+
         throw error;
     }
 }

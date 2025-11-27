@@ -1,5 +1,5 @@
 /**
- * 12-ui-filters.js - Filter-Steuerung
+ * 13-ui-filters.js - Filter-Steuerung
  *
  * Verwaltet alle Filter und deren UI-Elemente.
  */

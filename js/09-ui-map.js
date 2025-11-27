@@ -1,5 +1,5 @@
 /**
- * 08-ui-map.js - Kartenvisualisierung
+ * 09-ui-map.js - Kartenvisualisierung
  *
  * Verwendet ArcGIS JavaScript API für die Einsatzkarte.
  * Basemap: OpenStreetMap (keine Authentifizierung erforderlich)

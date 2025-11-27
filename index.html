@@ -37,7 +37,7 @@
     <header class="dashboard-header">
         <div class="header-content">
             <div class="header-title">
-                <h1>🚒 Einsatz-Dashboard</h1>
+                <h1>Einsatz-Dashboard</h1>
                 <span class="header-subtitle">Feuerwehr Hamburg - Einsatzunterstützung</span>
             </div>
             <div class="header-status">
@@ -77,8 +77,8 @@
                 </select>
             </div>
             <div class="filter-actions">
-                <button id="refresh-btn" class="btn btn-primary">🔄 Aktualisieren</button>
-                <button id="export-btn" class="btn btn-secondary">📥 Export CSV</button>
+                <button id="refresh-btn" class="btn btn-primary">Aktualisieren</button>
+                <button id="export-btn" class="btn btn-secondary">Export CSV</button>
             </div>
         </section>
 
@@ -145,9 +145,9 @@
                 <div class="table-pagination">
                     <span id="pagination-info">Zeige 0 von 0 Einträgen</span>
                     <div class="pagination-controls">
-                        <button id="prev-page" class="btn btn-small" disabled>← Zurück</button>
+                        <button id="prev-page" class="btn btn-small" disabled>Zurück</button>
                         <span id="page-indicator">Seite 1</span>
-                        <button id="next-page" class="btn btn-small" disabled>Weiter →</button>
+                        <button id="next-page" class="btn btn-small" disabled>Weiter</button>
                     </div>
                 </div>
             </div>
@@ -158,8 +158,8 @@
                     <h2>Einsatzkarte</h2>
                     <div class="map-controls">
                         <button id="map-zoom-in" class="btn btn-small">+</button>
-                        <button id="map-zoom-out" class="btn btn-small">−</button>
-                        <button id="map-center" class="btn btn-small">⌖</button>
+                        <button id="map-zoom-out" class="btn btn-small">-</button>
+                        <button id="map-center" class="btn btn-small">Hamburg</button>
                     </div>
                 </div>
                 <div id="map-view" class="map-view"></div>
@@ -193,6 +193,36 @@
         </section>
     </main>
 
+    <!-- Token-Eingabe Modal -->
+    <div id="token-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2>ArcGIS Token erforderlich</h2>
+                <button class="modal-close" id="token-modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 1rem; color: var(--text-secondary);">
+                    Für den Zugriff auf die Einsatzdaten wird ein ArcGIS-Token benötigt.
+                    Bitte geben Sie Ihren Token ein:
+                </p>
+                <div class="filter-group" style="width: 100%;">
+                    <label for="token-input">ArcGIS Token:</label>
+                    <input type="password"
+                           id="token-input"
+                           class="search-input"
+                           style="width: 100%;"
+                           placeholder="Token eingeben...">
+                </div>
+                <p style="margin-top: 1rem; font-size: 0.75rem; color: var(--text-muted);">
+                    Der Token wird sicher im Browser gespeichert und bei Sitzungsende gelöscht.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="token-submit">Token speichern</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Einsatz-Detail Modal -->
     <div id="detail-modal" class="modal-overlay" style="display: none;">
         <div class="modal-content">
@@ -209,19 +239,20 @@
         </div>
     </div>
 
-    <!-- Modular JavaScript -->
+    <!-- Modular JavaScript - Reihenfolge ist wichtig! -->
     <script src="js/01-config.js"></script>
     <script src="js/02-state.js"></script>
     <script src="js/03-security.js"></script>
-    <script src="js/04-helpers.js"></script>
-    <script src="js/05-data.js"></script>
-    <script src="js/06-ui-kpis.js"></script>
-    <script src="js/07-ui-table.js"></script>
-    <script src="js/08-ui-map.js"></script>
-    <script src="js/09-ui-modal.js"></script>
-    <script src="js/10-ui-charts.js"></script>
-    <script src="js/11-ui-resources.js"></script>
-    <script src="js/12-ui-filters.js"></script>
-    <script src="js/13-main.js"></script>
+    <script src="js/04-auth.js"></script>
+    <script src="js/05-helpers.js"></script>
+    <script src="js/06-data.js"></script>
+    <script src="js/07-ui-kpis.js"></script>
+    <script src="js/08-ui-table.js"></script>
+    <script src="js/09-ui-map.js"></script>
+    <script src="js/10-ui-modal.js"></script>
+    <script src="js/11-ui-charts.js"></script>
+    <script src="js/12-ui-resources.js"></script>
+    <script src="js/13-ui-filters.js"></script>
+    <script src="js/14-main.js"></script>
 </body>
 </html>

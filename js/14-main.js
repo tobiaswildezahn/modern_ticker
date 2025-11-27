@@ -1,8 +1,11 @@
 /**
- * 13-main.js - Hauptmodul
+ * 14-main.js - Hauptmodul
  *
  * Orchestriert die Initialisierung und das Zusammenspiel aller Module.
  * Enthält die init()-Funktion, die beim Laden der Seite ausgeführt wird.
+ *
+ * WICHTIG: Die Authentifizierung (initAuth) muss zuerst erfolgen, bevor
+ * Daten von den ArcGIS Feature Services geladen werden können.
  */
 
 /**
@@ -87,7 +90,15 @@ async function init() {
     try {
         showLoading();
 
-        // 1. Karte initialisieren (benötigt ArcGIS AMD-Loader)
+        // 1. AUTHENTIFIZIERUNG ZUERST - esriRequest und IdentityManager laden
+        await initAuth();
+        console.log('✅ ArcGIS Authentifizierung initialisiert');
+
+        // 2. Token-Dialog Event-Listener
+        initTokenDialogListeners();
+        console.log('✅ Token-Dialog initialisiert');
+
+        // 3. Karte initialisieren (benötigt ArcGIS AMD-Loader)
         try {
             await initMap();
             console.log('✅ Karte initialisiert');
@@ -96,32 +107,40 @@ async function init() {
             // Dashboard kann auch ohne Karte funktionieren
         }
 
-        // 2. Charts initialisieren
+        // 4. Charts initialisieren
         initCharts();
         console.log('✅ Charts initialisiert');
 
-        // 3. Event-Listener initialisieren
+        // 5. Event-Listener initialisieren
         initTableListeners();
         initModalListeners();
         initFilterListeners();
         initMapControls();
         console.log('✅ Event-Listener initialisiert');
 
-        // 4. Initiale Daten laden
+        // 6. Prüfen ob Token vorhanden, sonst Dialog zeigen
+        if (!hasValidToken()) {
+            console.log('⚠️ Kein Token vorhanden, zeige Dialog...');
+            showTokenDialog();
+            hideLoading();
+            return; // Warten bis Token eingegeben wird
+        }
+
+        // 7. Initiale Daten laden
         await fetchAllData({
             hours: state.filters.timeRange
         });
         console.log('✅ Initiale Daten geladen');
 
-        // 5. UI aktualisieren
+        // 8. UI aktualisieren
         updateTypeFilterOptions();
         updateUI();
 
-        // 6. Auto-Refresh starten
+        // 9. Auto-Refresh starten
         startAutoRefresh();
         console.log('✅ Auto-Refresh gestartet');
 
-        // 7. Cache-Cleanup planen
+        // 10. Cache-Cleanup planen
         setInterval(cleanCache, 60000); // Jede Minute
 
         console.log('🚒 Dashboard bereit!');

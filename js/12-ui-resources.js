@@ -1,5 +1,5 @@
 /**
- * 11-ui-resources.js - Ressourcen-Übersicht
+ * 12-ui-resources.js - Ressourcen-Übersicht
  *
  * Zeigt alle Fahrzeuge/Ressourcen mit ihrem aktuellen Status an.
  */

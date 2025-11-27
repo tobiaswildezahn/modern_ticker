@@ -1,5 +1,5 @@
 /**
- * 06-ui-kpis.js - KPI-Karten UI
+ * 07-ui-kpis.js - KPI-Karten UI
  *
  * Aktualisiert die KPI-Anzeigen im Dashboard.
  */

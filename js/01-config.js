@@ -5,10 +5,13 @@
  * Alle API-Endpunkte, Schwellenwerte und Konstanten werden hier definiert.
  *
  * SICHERHEIT: Keine sensiblen Daten (Passwörter, Tokens) in dieser Datei!
- * Diese Datei kann im Browser-Inspektor eingesehen werden.
+ * Tokens werden über sessionStorage oder zur Laufzeit gesetzt.
  */
 
 const CONFIG = {
+    // ArcGIS Server Basis-URL (für Token-Registrierung)
+    arcgisServer: 'https://geoportal.feuerwehr.hamburg.de/ags',
+
     // ArcGIS Feature Service URLs
     // HINWEIS: Diese URLs sind nur im internen Netzwerk erreichbar
     api: {
@@ -28,6 +31,16 @@ const CONFIG = {
         resources: 'https://geoportal.feuerwehr.hamburg.de/ags/rest/services/Ressources/FeatureServer/0'
     },
 
+    // Authentifizierung
+    auth: {
+        // Token-Gültigkeit in Millisekunden (Standard: 2 Stunden)
+        tokenExpiry: 7200000,
+        // Token-Refresh-Intervall (110 Minuten, vor Ablauf)
+        tokenRefreshInterval: 6600000,
+        // SessionStorage Key für Token
+        tokenStorageKey: 'arcgis_token'
+    },
+
     // Karteneinstellungen
     map: {
         // Hamburg Zentrum
@@ -35,8 +48,7 @@ const CONFIG = {
             longitude: 10.0,
             latitude: 53.55
         },
-        zoom: 11,
-        basemap: 'dark-gray-vector'
+        zoom: 11
     },
 
     // Zeitfilter-Standardwert (in Stunden)
@@ -61,7 +73,7 @@ const CONFIG = {
         // Rettungsdienst (Blau)
         medical: [
             'Rettungsdienst', 'RTW', 'Notfall', 'Person',
-            'Reanimation', 'Notarzt', 'NEF'
+            'Reanimation', 'Notarzt', 'NEF', 'NOTF'
         ],
         // Technische Hilfe (Gelb)
         technical: [
@@ -85,13 +97,14 @@ const CONFIG = {
         beendet: ['beendet', 'BEENDET', 'frei', 'FREI']
     },
 
-    // Debug-Modus
-    debug: false
+    // Debug-Modus (für Console-Logs)
+    debug: true
 };
 
 // Freeze CONFIG to prevent accidental modification
 Object.freeze(CONFIG);
 Object.freeze(CONFIG.api);
+Object.freeze(CONFIG.auth);
 Object.freeze(CONFIG.map);
 Object.freeze(CONFIG.pagination);
 Object.freeze(CONFIG.eventTypeCategories);

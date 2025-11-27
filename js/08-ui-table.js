@@ -1,5 +1,5 @@
 /**
- * 07-ui-table.js - Einsatz-Tabelle UI
+ * 08-ui-table.js - Einsatz-Tabelle UI
  *
  * Rendert und verwaltet die Einsatz-Tabelle mit Sortierung,
  * Pagination und Suchfunktion.
