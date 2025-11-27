@@ -79,7 +79,7 @@ function stopAutoRefresh() {
 /**
  * Hauptinitialisierung
  *
- * Wird aufgerufen sobald die ArcGIS API geladen ist.
+ * Wird aufgerufen sobald das DOM geladen ist.
  */
 async function init() {
     console.log('🚒 Einsatz-Dashboard wird initialisiert...');
@@ -87,16 +87,7 @@ async function init() {
     try {
         showLoading();
 
-        // 1. ArcGIS Request-Modul initialisieren
-        await initEsriRequest();
-
-        if (!esriRequest) {
-            throw new Error('ArcGIS API nicht verfügbar');
-        }
-
-        console.log('✅ ArcGIS API geladen');
-
-        // 2. Karte initialisieren
+        // 1. Karte initialisieren (benötigt ArcGIS AMD-Loader)
         try {
             await initMap();
             console.log('✅ Karte initialisiert');
@@ -105,32 +96,32 @@ async function init() {
             // Dashboard kann auch ohne Karte funktionieren
         }
 
-        // 3. Charts initialisieren
+        // 2. Charts initialisieren
         initCharts();
         console.log('✅ Charts initialisiert');
 
-        // 4. Event-Listener initialisieren
+        // 3. Event-Listener initialisieren
         initTableListeners();
         initModalListeners();
         initFilterListeners();
         initMapControls();
         console.log('✅ Event-Listener initialisiert');
 
-        // 5. Initiale Daten laden
+        // 4. Initiale Daten laden
         await fetchAllData({
             hours: state.filters.timeRange
         });
         console.log('✅ Initiale Daten geladen');
 
-        // 6. UI aktualisieren
+        // 5. UI aktualisieren
         updateTypeFilterOptions();
         updateUI();
 
-        // 7. Auto-Refresh starten
+        // 6. Auto-Refresh starten
         startAutoRefresh();
         console.log('✅ Auto-Refresh gestartet');
 
-        // 8. Cache-Cleanup planen
+        // 7. Cache-Cleanup planen
         setInterval(cleanCache, 60000); // Jede Minute
 
         console.log('🚒 Dashboard bereit!');
@@ -138,7 +129,7 @@ async function init() {
 
     } catch (error) {
         console.error('❌ Initialisierungsfehler:', error);
-        showToast('Fehler bei der Initialisierung', 'error');
+        showToast('Fehler bei der Initialisierung: ' + error.message, 'error');
 
         // Verbindungsstatus aktualisieren
         setConnectionStatus('disconnected');
@@ -148,9 +139,12 @@ async function init() {
 }
 
 /**
- * Startet die Initialisierung wenn die ArcGIS API geladen ist
+ * Startet die Initialisierung
+ * Verwendet den ArcGIS AMD-Loader für die Kartenmodule
  */
-require(['esri/request'], function() {
+require(['esri/kernel'], function(esriKernel) {
+    console.log('ArcGIS SDK Version:', esriKernel.version);
+
     // Warten auf DOM
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);

@@ -2,6 +2,7 @@
  * 08-ui-map.js - Kartenvisualisierung
  *
  * Verwendet ArcGIS JavaScript API für die Einsatzkarte.
+ * Basemap: OpenStreetMap (keine Authentifizierung erforderlich)
  */
 
 /**
@@ -17,13 +18,21 @@ function initMap() {
             'esri/Graphic',
             'esri/layers/GraphicsLayer',
             'esri/symbols/SimpleMarkerSymbol',
-            'esri/PopupTemplate'
-        ], function(Map, MapView, Graphic, GraphicsLayer, SimpleMarkerSymbol, PopupTemplate) {
+            'esri/PopupTemplate',
+            'esri/layers/WebTileLayer'
+        ], function(Map, MapView, Graphic, GraphicsLayer, SimpleMarkerSymbol, PopupTemplate, WebTileLayer) {
 
             try {
-                // Karte erstellen
+                // OpenStreetMap als Basemap (keine ArcGIS-Authentifizierung nötig)
+                const osmLayer = new WebTileLayer({
+                    urlTemplate: 'https://{subDomain}.tile.openstreetmap.org/{level}/{col}/{row}.png',
+                    subDomains: ['a', 'b', 'c'],
+                    copyright: 'OpenStreetMap contributors'
+                });
+
+                // Karte erstellen mit OSM
                 const map = new Map({
-                    basemap: CONFIG.map.basemap
+                    layers: [osmLayer]
                 });
 
                 // Graphics Layer für Einsatz-Marker
@@ -38,6 +47,10 @@ function initMap() {
                     zoom: CONFIG.map.zoom,
                     ui: {
                         components: [] // Keine Standard-Widgets
+                    },
+                    constraints: {
+                        minZoom: 8,
+                        maxZoom: 18
                     }
                 });
 

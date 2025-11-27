@@ -2,55 +2,56 @@
  * 05-data.js - Datenabfrage und -verarbeitung
  *
  * Enthält alle Funktionen für die Kommunikation mit den ArcGIS Feature Services.
- * Verwendet AMD-Wrapper für ArcGIS API Integration.
+ * Verwendet native fetch() für maximale Kompatibilität.
  */
-
-// Wird durch ArcGIS AMD-Loader gesetzt
-let esriRequest = null;
-
-/**
- * Initialisiert das ArcGIS Request-Modul
- *
- * @returns {Promise} Promise das resolved wenn esriRequest verfügbar ist
- */
-function initEsriRequest() {
-    return new Promise((resolve, reject) => {
-        require(['esri/request'], function(request) {
-            esriRequest = request;
-            resolve();
-        });
-    });
-}
 
 /**
  * Führt eine ArcGIS Feature Query durch
+ *
+ * Verwendet native fetch() anstelle von esriRequest für bessere Kompatibilität.
  *
  * @param {string} url - Feature Service URL
  * @param {Object} params - Query-Parameter
  * @returns {Promise<Array>} Array von Features
  */
 async function queryFeatureService(url, params = {}) {
-    if (!esriRequest) {
-        throw new Error('esriRequest nicht initialisiert');
-    }
-
     const defaultParams = {
         where: '1=1',
         outFields: '*',
-        returnGeometry: true,
+        returnGeometry: 'true',
         f: 'json'
     };
 
     const queryParams = { ...defaultParams, ...params };
 
+    // URL mit Query-Parametern aufbauen
+    const queryString = Object.entries(queryParams)
+        .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+        .join('&');
+
+    const fullUrl = `${url}/query?${queryString}`;
+
     try {
-        const response = await esriRequest(url + '/query', {
-            query: queryParams,
-            responseType: 'json'
+        const response = await fetch(fullUrl, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json'
+            }
         });
 
-        if (response.data && response.data.features) {
-            return response.data.features.map(f => ({
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+
+        // Fehlerprüfung für ArcGIS Fehlerantworten
+        if (data.error) {
+            throw new Error(`ArcGIS Error: ${data.error.message || JSON.stringify(data.error)}`);
+        }
+
+        if (data.features) {
+            return data.features.map(f => ({
                 ...f.attributes,
                 geometry: f.geometry
             }));
