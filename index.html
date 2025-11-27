@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Einsatz-Dashboard - Feuerwehr Hamburg</title>
+
+    <!-- ArcGIS JavaScript API -->
+    <link rel="stylesheet" href="https://js.arcgis.com/4.33/esri/themes/dark/main.css">
+    <script src="https://js.arcgis.com/4.33/"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <!-- Modular CSS -->
+    <link rel="stylesheet" href="css/01-variables.css">
+    <link rel="stylesheet" href="css/02-base.css">
+    <link rel="stylesheet" href="css/03-header.css">
+    <link rel="stylesheet" href="css/04-filters.css">
+    <link rel="stylesheet" href="css/05-cards.css">
+    <link rel="stylesheet" href="css/06-table.css">
+    <link rel="stylesheet" href="css/07-map.css">
+    <link rel="stylesheet" href="css/08-modal.css">
+    <link rel="stylesheet" href="css/09-responsive.css">
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Lade Einsatzdaten...</div>
+    </div>
+
+    <!-- Toast Message Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Header -->
+    <header class="dashboard-header">
+        <div class="header-content">
+            <div class="header-title">
+                <h1>🚒 Einsatz-Dashboard</h1>
+                <span class="header-subtitle">Feuerwehr Hamburg - Einsatzunterstützung</span>
+            </div>
+            <div class="header-status">
+                <span class="status-indicator" id="connection-status"></span>
+                <span class="last-update" id="last-update">Letzte Aktualisierung: --:--:--</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="dashboard-main">
+        <!-- Filter Section -->
+        <section class="filter-section">
+            <div class="filter-group">
+                <label for="time-filter">Zeitraum:</label>
+                <select id="time-filter" class="filter-select">
+                    <option value="1">Letzte Stunde</option>
+                    <option value="6">Letzte 6 Stunden</option>
+                    <option value="12">Letzte 12 Stunden</option>
+                    <option value="24" selected>Letzte 24 Stunden</option>
+                    <option value="48">Letzte 48 Stunden</option>
+                    <option value="168">Letzte 7 Tage</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="status-filter">Status:</label>
+                <select id="status-filter" class="filter-select">
+                    <option value="all">Alle</option>
+                    <option value="active">Aktive Einsätze</option>
+                    <option value="completed">Abgeschlossen</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="type-filter">Einsatzart:</label>
+                <select id="type-filter" class="filter-select">
+                    <option value="all">Alle Arten</option>
+                </select>
+            </div>
+            <div class="filter-actions">
+                <button id="refresh-btn" class="btn btn-primary">🔄 Aktualisieren</button>
+                <button id="export-btn" class="btn btn-secondary">📥 Export CSV</button>
+            </div>
+        </section>
+
+        <!-- KPI Cards -->
+        <section class="kpi-section">
+            <div class="kpi-card" id="kpi-total">
+                <div class="kpi-icon">📋</div>
+                <div class="kpi-content">
+                    <div class="kpi-value" id="kpi-total-value">--</div>
+                    <div class="kpi-label">Einsätze gesamt</div>
+                </div>
+            </div>
+            <div class="kpi-card active" id="kpi-active">
+                <div class="kpi-icon">🚨</div>
+                <div class="kpi-content">
+                    <div class="kpi-value" id="kpi-active-value">--</div>
+                    <div class="kpi-label">Aktive Einsätze</div>
+                </div>
+            </div>
+            <div class="kpi-card" id="kpi-resources">
+                <div class="kpi-icon">🚒</div>
+                <div class="kpi-content">
+                    <div class="kpi-value" id="kpi-resources-value">--</div>
+                    <div class="kpi-label">Ressourcen im Einsatz</div>
+                </div>
+            </div>
+            <div class="kpi-card" id="kpi-avg-time">
+                <div class="kpi-icon">⏱️</div>
+                <div class="kpi-content">
+                    <div class="kpi-value" id="kpi-avg-time-value">--</div>
+                    <div class="kpi-label">Ø Einsatzdauer</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Grid: Table + Map -->
+        <section class="main-grid">
+            <!-- Einsatz-Tabelle -->
+            <div class="table-container">
+                <div class="table-header">
+                    <h2>Aktuelle Einsätze</h2>
+                    <div class="table-search">
+                        <input type="text" id="search-input" placeholder="Suchen..." class="search-input">
+                    </div>
+                </div>
+                <div class="table-wrapper">
+                    <table id="einsatz-table" class="data-table">
+                        <thead>
+                            <tr>
+                                <th data-sort="id" class="sortable">Einsatz-ID</th>
+                                <th data-sort="type" class="sortable">Typ</th>
+                                <th data-sort="address" class="sortable">Adresse</th>
+                                <th data-sort="time" class="sortable">Alarmzeit</th>
+                                <th data-sort="status" class="sortable">Status</th>
+                                <th data-sort="resources" class="sortable">Ressourcen</th>
+                                <th>Aktionen</th>
+                            </tr>
+                        </thead>
+                        <tbody id="einsatz-tbody">
+                            <!-- Dynamisch gefüllt -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="table-pagination">
+                    <span id="pagination-info">Zeige 0 von 0 Einträgen</span>
+                    <div class="pagination-controls">
+                        <button id="prev-page" class="btn btn-small" disabled>← Zurück</button>
+                        <span id="page-indicator">Seite 1</span>
+                        <button id="next-page" class="btn btn-small" disabled>Weiter →</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Karte -->
+            <div class="map-container">
+                <div class="map-header">
+                    <h2>Einsatzkarte</h2>
+                    <div class="map-controls">
+                        <button id="map-zoom-in" class="btn btn-small">+</button>
+                        <button id="map-zoom-out" class="btn btn-small">−</button>
+                        <button id="map-center" class="btn btn-small">⌖</button>
+                    </div>
+                </div>
+                <div id="map-view" class="map-view"></div>
+                <div class="map-legend">
+                    <div class="legend-item"><span class="legend-dot fire"></span> Brand</div>
+                    <div class="legend-item"><span class="legend-dot medical"></span> Rettungsdienst</div>
+                    <div class="legend-item"><span class="legend-dot technical"></span> Technische Hilfe</div>
+                    <div class="legend-item"><span class="legend-dot other"></span> Sonstiges</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Ressourcen-Übersicht -->
+        <section class="resources-section">
+            <h2>Ressourcen-Übersicht</h2>
+            <div class="resources-grid" id="resources-grid">
+                <!-- Dynamisch gefüllt -->
+            </div>
+        </section>
+
+        <!-- Charts Section -->
+        <section class="charts-section">
+            <div class="chart-container">
+                <h3>Einsätze nach Typ</h3>
+                <canvas id="chart-by-type"></canvas>
+            </div>
+            <div class="chart-container">
+                <h3>Einsätze im Zeitverlauf</h3>
+                <canvas id="chart-timeline"></canvas>
+            </div>
+        </section>
+    </main>
+
+    <!-- Einsatz-Detail Modal -->
+    <div id="detail-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">Einsatz-Details</h2>
+                <button class="modal-close" id="modal-close">&times;</button>
+            </div>
+            <div class="modal-body" id="modal-body">
+                <!-- Dynamisch gefüllt -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="modal-close-btn">Schließen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modular JavaScript -->
+    <script src="js/01-config.js"></script>
+    <script src="js/02-state.js"></script>
+    <script src="js/03-security.js"></script>
+    <script src="js/04-helpers.js"></script>
+    <script src="js/05-data.js"></script>
+    <script src="js/06-ui-kpis.js"></script>
+    <script src="js/07-ui-table.js"></script>
+    <script src="js/08-ui-map.js"></script>
+    <script src="js/09-ui-modal.js"></script>
+    <script src="js/10-ui-charts.js"></script>
+    <script src="js/11-ui-resources.js"></script>
+    <script src="js/12-ui-filters.js"></script>
+    <script src="js/13-main.js"></script>
+</body>
+</html>

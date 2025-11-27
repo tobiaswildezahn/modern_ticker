@@ -1,0 +1,76 @@
+/**
+ * CSS Variables - Zentrale Design-Tokens
+ *
+ * Farbschema orientiert sich an Feuerwehr-Design:
+ * - Rot für aktive/kritische Elemente
+ * - Blau für Rettungsdienst
+ * - Gelb für technische Hilfe
+ * - Dunkel für professionelle Optik
+ */
+
+:root {
+    /* Primary Colors */
+    --color-primary: #dc2626;
+    --color-primary-light: #ef4444;
+    --color-primary-dark: #b91c1c;
+
+    /* Emergency Type Colors */
+    --color-fire: #dc2626;
+    --color-medical: #2563eb;
+    --color-technical: #ca8a04;
+    --color-other: #6b7280;
+
+    /* Status Colors */
+    --color-success: #22c55e;
+    --color-warning: #f59e0b;
+    --color-danger: #ef4444;
+    --color-info: #3b82f6;
+
+    /* Background Colors */
+    --bg-primary: #111827;
+    --bg-secondary: #1f2937;
+    --bg-tertiary: #374151;
+    --bg-card: #1f2937;
+    --bg-hover: #374151;
+
+    /* Text Colors */
+    --text-primary: #f9fafb;
+    --text-secondary: #d1d5db;
+    --text-muted: #9ca3af;
+
+    /* Border Colors */
+    --border-color: #374151;
+    --border-color-light: #4b5563;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+    /* Spacing */
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+    --spacing-2xl: 3rem;
+
+    /* Border Radius */
+    --radius-sm: 0.25rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+    --radius-xl: 1rem;
+    --radius-full: 9999px;
+
+    /* Transitions */
+    --transition-fast: 150ms ease;
+    --transition-normal: 200ms ease;
+    --transition-slow: 300ms ease;
+
+    /* Z-Index Scale */
+    --z-dropdown: 100;
+    --z-modal: 1000;
+    --z-loading: 2000;
+    --z-toast: 3000;
+}
